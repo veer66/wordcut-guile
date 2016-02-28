@@ -3,16 +3,20 @@
 (use-modules (ice-9 format))
 (use-modules (oop goops))
 (use-modules (srfi srfi-1))
+
+(define-generic headword)
+(define-method (headword (item <string>))
+  item)
 	     
 (define (dict-seek dict policy l r offset ch)
   (define (recur l r ans)
     (if (<= l r)
 	(let* ((m (floor (/ (+ l r) 2)))
-	       (w (car (vector-ref dict m)))
-	       (wlen (vector-length w)))
+	       (w (headword (vector-ref dict m)))
+	       (wlen (string-length w)))
 	  (if (<= wlen offset)
 	      (recur (+ 1 m) r ans)
-	      (let ((ch-w (vector-ref w offset)))
+	      (let ((ch-w (string-ref w offset)))
 		(cond ((char<? ch-w ch) (recur (+ 1 m) r ans))
 		      ((char>? ch-w ch) (recur l (- m 1) ans))
 		      ((eq? policy 'LEFT) (recur l (- m 1) m))
@@ -36,8 +40,13 @@
   (dict #:init-value #nil #:accessor dict #:init-keyword #:dict)
   (is-final #:init-value #f #:accessor is-final #:init-keyword #:is-final))
 
+
+(define-generic headword-len)
+(define-method (headword-len (item <string>))
+  (string-length item))
+
 (define (dict-wlen dict i)
-  (vector-length (car (vector-ref dict i))))
+  (headword-len (vector-ref dict i)))
 
 (define-generic update)
 
@@ -75,8 +84,8 @@
 	   (unk (slot-ref src 'unk))
 	   (chunk (+ (slot-ref src 'chunk) 1))
 	   (payload (vector-ref dict l)))
-       (make edge-class #:s s #:unk unk #:chunk chunk
-	     #:type 'DICT #:payload payload)))
+      (make edge-class #:s s #:unk unk #:chunk chunk
+	    #:type 'DICT #:payload payload)))
   (map each-edge final-pointers))
 
 (define-generic better?)
@@ -92,19 +101,64 @@
 
 (define (best-edge edges)
   (define (recur best edges)
-    (cond ((null? edges) best)
-	  ((better? (car edges) best) (recur (car edges) (cdr edges)))
+    (cond ((null? edges)
+	   best)
+	  ((better? (car edges) best)
+	   (recur (car edges) (cdr edges)))
 	  (else (recur best (cdr edges)))))
   (recur (car edges) (cdr edges)))
 
-(define create-unk-edge (dag left edge-class)
+(define (create-unk-edge dag left edge-class)
   (let ((src (vector-ref dag left)))
-    (make edge-class
-      #:chunk (slot-ref src 'chunk)
+    (make Edge
+      #:chunk (+ (slot-ref src 'chunk) 1)
       #:unk (+ (slot-ref src 'unk) 1)
       #:s left
       #:type 'UNK
-      #:payload nil)))
+      #:payload #nil)))
+
+
+(define (update-dag-dict! dag i final-pointers edge-class)
+  (let* ((edges (build-edges dag
+			     final-pointers
+			     edge-class))
+	 (selected-edge (best-edge edges)))    
+    (vector-set! dag i selected-edge))
+  i)
+
+(define (update-dag-unk! dag i left edge-class)
+  (let ((edge (create-unk-edge dag
+				left
+				edge-class)))
+    (vector-set! dag
+		 i
+		 edge))
+  left)
+
+(define (update-dag! dag i left pointers edge-class)
+  (let ((final-pointers (filter (lambda (p) (slot-ref p 'is-final)) pointers)))
+    (if (null? final-pointers)
+	(update-dag-unk! dag i left edge-class)
+	(update-dag-dict! dag i final-pointers edge-class))))
+
+(define (build-dag txt dict edge-class)
+  (let* ((txt-len (string-length txt))
+	 (dag (make-vector (+ txt-len 1))))
+    (define (recur i left pointers)
+      (if (> i txt-len)
+	  dag
+	  (let* ((new-pointer (make Pointer #:s (- i 1)
+				    #:r (- (vector-length dict) 1)
+				    #:dict dict))
+		 (pointers (cons new-pointer pointers))
+		 (ch (string-ref txt (- i 1)))
+		 (pointers (transit-pointers pointers ch))
+		 (pointers (delete null? pointers))
+		 (left (update-dag! dag i left pointers edge-class)))
+	    (recur (+ i 1) left pointers))))
+    (begin
+      (vector-set! dag 0 (make edge-class))
+      (recur 1 0 (list)))))
 
 
 ;; (define dict (list-to-dict (list "กา" "ขา" "ขาม" "ค")))
