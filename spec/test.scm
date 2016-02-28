@@ -1,12 +1,12 @@
 ;; -*- geiser-scheme-implementation: guile -*-
 
-(use-modules (ggspec lib))
-(load "../wordcut/wordcut.scm")
-;;(primitive-load-path "wordcut/wordcut.scm")
-
+(define-module (wordcut tokenizer))
+(primitive-load "wordcut/wordcut.scm")
 (define tiny-dict (vector "กา" "ขา" "ขาม" "ค"))
 (define tiny-l 0)
 (define tiny-r (- (vector-length tiny-dict) 1))
+
+(use-modules (ggspec lib))
 
 (suite
  "dict"
@@ -161,4 +161,27 @@
      (define dag (build-dag txt tiny-dict Edge))
      (assert-equal 0 (slot-ref (vector-ref dag 3) 's))
      (assert-equal 3 (slot-ref (vector-ref dag 5) 's))))
+  (test
+   "dag to list"
+   e
+   (let ((dag (vector (make Edge #:s 0 #:unk 0 #:chunk 0)
+		      #nil
+		      #nil
+		      (make Edge #:s 0 #:unk 0 #:chunk 1 #:type 'DICT)
+		      #nil
+		      (make Edge #:s 3 #:unk 0 #:chunk 2 #:type 'DICT))))
+     (define lst (dag->list dag "ขามกา"))
+     (assert-equal (list "ขาม" "กา") lst)))
+    (test
+     "dag to txt"
+     e
+     (let ((dag (vector (make Edge #:s 0 #:unk 0 #:chunk 0)
+			#nil
+			#nil
+			(make Edge #:s 0 #:unk 0 #:chunk 1 #:type 'DICT)
+			#nil
+			(make Edge #:s 3 #:unk 0 #:chunk 2 #:type 'DICT))))
+       (define lst (dag->txt dag "ขามกา"))
+       (assert-equal "ขาม กา" lst)))
   ))
+

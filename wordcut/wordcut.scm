@@ -1,8 +1,10 @@
 ;; -*- geiser-scheme-implementation: guile -*-
 
-(use-modules (ice-9 format))
-(use-modules (oop goops))
-(use-modules (srfi srfi-1))
+(define-module (wordcut tokenizer)
+  #:use-module (srfi srfi-1)
+  #:use-module (oop goops)
+  #:use-module (ice-9 format)
+  #:export (create-word-tokenizer))
 
 (define-generic headword)
 (define-method (headword (item <string>))
@@ -98,7 +100,6 @@
 				(slot-ref e1 this-slot))))))
   (recur (list 'unk 'chunk) #nil))
 
-
 (define (best-edge edges)
   (define (recur best edges)
     (cond ((null? edges)
@@ -116,7 +117,6 @@
       #:s left
       #:type 'UNK
       #:payload #nil)))
-
 
 (define (update-dag-dict! dag i final-pointers edge-class)
   (let* ((edges (build-edges dag
@@ -161,10 +161,21 @@
       (recur 1 0 (list)))))
 
 
-;; (define dict (list-to-dict (list "กา" "ขา" "ขาม" "ค")))
-;; (define p0 (make Pointer #:s 0 #:l 0 #:r 3 #:offset 0 #:dict dict))
-;; (slot-ref p0 'dict)
-;; (slot-ref p0 'r)
+(define (dag->list dag txt)
+  (define (recur i lst)
+    (if (eq? 0 i)
+	lst
+	(let* ((edge (vector-ref dag i))
+	       (s (slot-ref edge 's))
+	       (surface (substring txt s i))
+	       (lst (cons surface lst)))
+	  (recur s lst))))  
+  (recur (- (vector-length dag) 1)
+	 (list)))
 
-;; (slot-ref (update p0 #\ข) 'l)
+(define (dag->txt dag txt)
+  (string-join (dag->list dag txt) " "))
 
+(define (create-word-tokenizer dict edge-class)
+  (lambda (txt)
+    (dag->list (build-dag txt dict edge-class) txt)))
