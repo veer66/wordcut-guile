@@ -5,7 +5,7 @@
   #:use-module (oop goops)
   #:use-module (ice-9 format)
   #:use-module (ice-9 rdelim)
-  #:export (create-word-tokenizer load-dict))
+  #:export (create-word-tokenizer load-dict Edge))
 
 (define-generic headword)
 (define-method (headword (item <string>))
