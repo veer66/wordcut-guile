@@ -1,2 +1,2 @@
 # wordcut-guile
-Word segmentaton tool written in Scheme (GNU Guile)
+Thai word segmentaton tool (word tokenizer) written in Scheme (GNU Guile).
