@@ -1,0 +1,20 @@
+#! /usr/bin/guile \
+-e main -s
+!#
+;; -*- geiser-scheme-implementation: guile -*-
+(use-modules (wordcut tokenizer)
+	     (ice-9 rdelim))
+
+(define (main args)
+  (define tokenize (create-word-tokenizer (load-dict (cadr args)) Edge))
+  (define (tok-line)
+    (let ((line (read-line)))
+      (if (eof-object? line)
+	  0
+	  (begin
+	    (display (string-join (tokenize line) " "))
+	    (newline)
+	    (tok-line)))))
+  (set-port-encoding! (current-input-port) "UTF-8")
+  (set-port-encoding! (current-output-port) "UTF-8")
+  (tok-line))
