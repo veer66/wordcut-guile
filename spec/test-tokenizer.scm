@@ -12,4 +12,12 @@
    e
    (begin
      (define tokenize (create-word-tokenizer tiny-dict Edge))
-     (assert-equal (list "ขาม" "กา") (tokenize "ขามกา"))))))
+     (assert-equal (list "ขาม" "กา") (tokenize "ขามกา"))))
+  (test
+   "std dict"
+   e
+   (begin
+     (define tokenize (create-word-tokenizer (load-dict "data/tdict-std.txt")
+					     Edge))
+     (assert-equal (list "ขาม" "กา") (tokenize "ขามกา"))))  
+  ))

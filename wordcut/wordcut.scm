@@ -4,7 +4,8 @@
   #:use-module (srfi srfi-1)
   #:use-module (oop goops)
   #:use-module (ice-9 format)
-  #:export (create-word-tokenizer))
+  #:use-module (ice-9 rdelim)
+  #:export (create-word-tokenizer load-dict))
 
 (define-generic headword)
 (define-method (headword (item <string>))
@@ -179,3 +180,16 @@
 (define (create-word-tokenizer dict edge-class)
   (lambda (txt)
     (dag->list (build-dag txt dict edge-class) txt)))
+
+(define (read-lines-to-vector port)
+  (define (recur port lst)
+    (let ((line (read-line port)))
+      (if (eof-object? line)
+	  lst
+	  (recur port (cons line lst)))))
+  (list->vector (reverse (recur port (list)))))
+
+(define (load-dict path)
+  (call-with-input-file path
+    read-lines-to-vector
+    #:encoding "UTF-8"))
