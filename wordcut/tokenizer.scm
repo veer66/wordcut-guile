@@ -5,7 +5,23 @@
   #:use-module (oop goops)
   #:use-module (ice-9 format)
   #:use-module (ice-9 rdelim)
-  #:export (create-word-tokenizer load-dict Edge))
+  #:export (create-word-tokenizer	    
+	    Edge
+	    Pointer
+	    load-dict
+	    dict-seek
+	    build-edges
+	    build-dag
+	    better?
+	    best-edge
+	    dag->list
+	    dag->txt
+	    update
+	    update-dag-dict!
+	    update-dag-unk!
+	    update-dag!
+	    transit-pointers
+	    create-unk-edge))
 
 (define-generic headword)
 (define-method (headword (item <string>))
